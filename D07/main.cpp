@@ -107,24 +107,24 @@ void run2(const fs::path& inputFile)
 	for (size_t i = 1; i < lines.size(); ++i) {
 		const Row& prev = lines[i - 1];
 		Row& current = lines[i];
-		for (size_t c = 0; c < prev.size() && c < current.size(); ++c) {
+		for (size_t c = 0; c < prev.size() && c < current.size(); ++c) { //we know its a tree, might inc-loop from center
 			const Cell& prevCell = prev[c];
 			Cell& currentCell = current[c];
 			//same as before, but inherit visitCount
 			if ( prevCell.cellType == '|' || prevCell.cellType == 'S') {
 				if (currentCell.cellType == '^') {
-					current[c].cellType = 'x';
-					current[c].visited+=prev[c].visited;
+					currentCell.cellType = 'x';
+					currentCell.visited += prevCell.visited;
 
 					current[c - 1].cellType = '|';
-					current[c - 1].visited += current[c].visited;
+					current[c - 1].visited += currentCell.visited;
 					current[c + 1].cellType = '|';
-					current[c + 1].visited += current[c].visited;
+					current[c + 1].visited += currentCell.visited;
 					++splitCount;
 				}
 				else {
-					current[c].cellType = '|';
-					current[c].visited += prev[c].visited; //<- += because rays can intersect rays
+					currentCell.cellType = '|';
+					currentCell.visited += prevCell.visited; //<- += because rays can intersect rays
 				}
 			}
 		}
