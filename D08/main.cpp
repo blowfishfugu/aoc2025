@@ -84,54 +84,75 @@ void run1(const fs::path& inputFile)
 		{
 			return std::get<0>(l) < std::get<0>(r);
 		});
-	using Circuit = std::vector<Junction*>;
+
+	using Circuit = std::vector<Junction*>; //possible optimization, just count per circuit
 	std::vector<Circuit> circuits;
-	
+	std::vector<size_t> sizesOnCap; //copy of sizes to not disturb part2
+
 	for (int i = 0; Distance& d:dists) {
-		auto& [len, dir, first, second] = d;
-		if (first->circuitID == 0 && second->circuitID == 0) {
+		auto& [len, dir, j1, j2] = d;
+		if (j1->circuitID == 0 && j2->circuitID == 0) {
 			circuits.emplace_back(Circuit{});
-			first->circuitID = circuits.size();
-			second->circuitID = circuits.size();
-			circuits[first->circuitID - 1].emplace_back(first);
-			circuits[second->circuitID - 1].emplace_back(second);
+			j1->circuitID = circuits.size();
+			j2->circuitID = circuits.size();
+			circuits[j1->circuitID - 1].emplace_back(j1);
+			circuits[j2->circuitID - 1].emplace_back(j2);
 		}
-		else if (first->circuitID == 0) {
-			first->circuitID = second->circuitID;
-			circuits[first->circuitID - 1].emplace_back(first);
+		else if (j1->circuitID == 0) {
+			j1->circuitID = j2->circuitID;
+			Circuit& c1 = circuits[j1->circuitID - 1];
+			c1.emplace_back(j1);
+			if (c1.size() == juncs.size()) {
+				std::println(std::cout, "last connection {} x {} = {}",
+					j1->pos.x(), j2->pos.x(), j1->pos.x() * j2->pos.x());
+				break;
+			}
 		}
-		else if (second->circuitID == 0) {
-			second->circuitID = first->circuitID;
-			circuits[second->circuitID - 1].emplace_back(second);
+		else if (j2->circuitID == 0) {
+			j2->circuitID = j1->circuitID;
+			Circuit& c2 = circuits[j2->circuitID - 1];
+			c2.emplace_back(j2);
+			if (c2.size() == juncs.size()) {
+				std::println(std::cout, "last connection {} x {} = {}",
+					j1->pos.x(), j2->pos.x(), j1->pos.x()* j2->pos.x());
+				break;
+			}
 		}
 		else {
-			//std::println(std::cerr, "should we merge circuit {} and {} ?", first->circuitID, second->circuitID);
-			if (first->circuitID != second->circuitID) {
-				Circuit& c1 = circuits[first->circuitID- 1];
-				Circuit& c2 = circuits[second->circuitID- 1];
-				for (Junction* j : c2) {
-					j->circuitID = first->circuitID;
+			if (j1->circuitID != j2->circuitID) {
+				//std::println(std::cout, "merging circuit {} and {} ?", j1->circuitID, j2->circuitID);
+				Circuit& c1 = circuits[j1->circuitID- 1];
+				Circuit& c2 = circuits[j2->circuitID- 1];
+				
+				for (Junction* j : c2) { 
+					j->circuitID = j1->circuitID;
 					c1.emplace_back(j);
 				}
 				c2.clear();
+				if (c1.size() == juncs.size()) {
+					std::println(std::cout, "last connection {} x {} = {}",
+						j1->pos.x(), j2->pos.x(), j1->pos.x()* j2->pos.x());
+					break;
+				}
 			}
 		}
+
+
 		++i;
-		if (i >= cap) {
-			break;
+		if (i == cap) {
+			for (Circuit& c : circuits) { sizesOnCap.emplace_back(c.size()); }
 		}
 	}
 	
-	std::sort(circuits.begin(), circuits.end(), 
-		[](const auto& l,const auto& r) {
-		return l.size() > r.size();
-		});
+	
+	//result of part1
+	std::sort(sizesOnCap.begin(), sizesOnCap.end(), [](const size_t& l, const size_t& r) {return l > r; });
 
-	I chksum{1ll};
+	I chksum{ 1ll };
 	for (size_t i = 0ull; i < 3ull; ++i) {
-		chksum *= circuits[i].size();
+		chksum *= sizesOnCap[i];
 	}
-	std::println("\npart1: product of three largest circuit-sizes: {}\n", chksum);
+	std::println("\npart1: product of three largest circuit-sizes: {}\n", chksum);;
 }
 
 
