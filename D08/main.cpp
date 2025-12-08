@@ -62,6 +62,9 @@ void run1(const fs::path& inputFile)
 		if (line.size() == 0) { break; }
 		juncs.emplace_back(line);
 	}
+	//example 20 juncs and limit 10
+	//in puzzle 1000 juncs and limit=1000!
+	int cap = (juncs.size() == 20) ? 10 : 1000;
 
 	//length,direction,start,end
 	using Distance = std::tuple<I, Vec3, Junction*, Junction*>;
@@ -83,7 +86,7 @@ void run1(const fs::path& inputFile)
 		});
 	using Circuit = std::vector<Junction*>;
 	std::vector<Circuit> circuits;
-	int cap = juncs.size() / 2;
+	
 	for (int i = 0; Distance& d:dists) {
 		auto& [len, dir, first, second] = d;
 		if (first->circuitID == 0 && second->circuitID == 0) {
