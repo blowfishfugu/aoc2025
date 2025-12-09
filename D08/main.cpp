@@ -138,7 +138,7 @@ void run1(const fs::path& inputFile)
 				Circuit& c1 = circuits[j1->circuitID- 1];
 				Circuit& c2 = circuits[j2->circuitID- 1];
 				
-				for (Junction* j : c2) { 
+				for (Junction* j : c2) { //this copy is ugly, room for improvement
 					j->circuitID = j1->circuitID;
 					c1.emplace_back(j);
 				}
