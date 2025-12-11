@@ -1,0 +1,26 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Data/">
+    <File Path="../.gitignore" />
+    <File Path="../Data/D01-1.txt" />
+    <File Path="../Data/D02-1.txt" />
+    <File Path="../Data/D03-1.txt" />
+    <File Path="../Data/D05-2.txt" />
+    <File Path="../Data/D06-1.txt" />
+    <File Path="../Data/D07-1.txt" />
+    <File Path="../Data/D08-1.txt" />
+    <File Path="../Data/D09-1.txt" />
+    <File Path="../Data/D11-1.txt" />
+  </Folder>
+  <Project Path="../D01/D01.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ec4" />
+  <Project Path="../D02/D02.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ec5" />
+  <Project Path="../D03/D03.vcxproj" />
+  <Project Path="../D05/D05.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ec8" />
+  <Project Path="../D06/D06.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ec9" />
+  <Project Path="../D07/D07.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7eca" />
+  <Project Path="../D08/D08.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ecb" />
+  <Project Path="../D09/D09.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ecc" />
+  <Project Path="../D11/D11.vcxproj" Id="94621c97-2902-4550-ba74-c0e409ed7ece" />
+</Solution>

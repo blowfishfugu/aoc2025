@@ -1,6 +1,6 @@
-#include "TxtFile.h"
-#include "SplitIter.h"
-#include "StopWatch.h"
+#include "../common/TxtFile.h"
+#include "../common/SplitIter.h"
+#include "../common/StopWatch.h"
 #include <print> //<- convenient, but bloats exe-binaries-size, back to printf??
 
 #define NOMINMAX

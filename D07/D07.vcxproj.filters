@@ -19,18 +19,4 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="LineIter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SplitIter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TxtFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StopWatch.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
 </Project>
