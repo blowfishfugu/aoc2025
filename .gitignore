@@ -10,6 +10,8 @@
 *.userosscache
 *.sln.docstates
 
+# no accidental puzzle-inputs
+**/Data/
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
@@ -259,3 +261,8 @@ dist
 
 #mark for connectionstrings,credentials
 **/*_secret.py
+/Data/D07-1.txt
+/Data/D08-1.txt
+/Data/D09-1.txt
+/Data/D03-1.txt
+/Data/D11-1.txt
