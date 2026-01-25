@@ -7,7 +7,10 @@
 #include <Windows.h> //GetModuleFilename, needed to locate Data-Folder relative to executable
 #include <span> //used to wrap args
 #include <algorithm>
+#include <functional>
 #include <numeric>
+#include <ranges>
+#include <string_view>
 using I = std::int64_t;
 
 
@@ -61,6 +64,7 @@ void run2(const fs::path& inputFile)
 
 void run3(const fs::path& inputFile)
 {
+	StopWatch timeIt(std::cout);
 	TxtFile txt(inputFile);
 	using rle = std::tuple<I, I>;
 	std::vector<rle> coaster;
@@ -104,6 +108,48 @@ void run3(const fs::path& inputFile)
 	std::println("part3: maxheight: {}", maxheight);
 }
 
+void run3b(const fs::path& inputFile)
+{
+	StopWatch timeIt(std::cout);
+	using rle = std::tuple<I, I>;
+	auto group_equals = [](auto x, auto y) { return (x==y); };
+	auto chunk_to_rle = [](auto&& chunk) {
+		auto delta{0ll};
+		switch (chunk[0]) {
+			case('^'): delta = 1ll; break;
+			case('v'): delta = -1ll; break;
+			default:break;
+		}
+		
+		return rle{ delta,chunk.size()};
+	};
+
+	TxtFile txt(inputFile);
+	auto coaster = std::ranges::to<std::vector>(
+		txt.buf
+		| std::views::chunk_by(group_equals)
+		| std::views::transform(chunk_to_rle)
+	);
+
+	const I maxSeq = std::get<1>(*std::max_element(coaster.cbegin(), coaster.cend()
+		, [](const rle& l, const rle& r) { return std::get<1>(l) < std::get<1>(r); }
+	));
+	std::println("\npart3: longestsequence: {}", maxSeq);
+	
+	std::vector<I> fibs{ 0ll,1ll };
+	for ( I i = 2ll; i <= maxSeq; ++i) {
+		fibs.emplace_back(fibs[i - 1] + fibs[i - 2]);
+	}
+
+	I maxheight{};
+	for (I height{}; const auto& [s, v] : coaster) {
+		height += s * fibs[v];
+		maxheight = std::max(height, maxheight);
+	}
+	std::println("part3: maxheight: {}", maxheight);
+}
+
+
 int main(int argc, const char* argv[])
 {
 	StopWatch timeIt(std::cout);
@@ -127,6 +173,7 @@ int main(int argc, const char* argv[])
 	run(inputFile);
 	run2(inputFile);
 	run3(inputFile);
-
+	run3b(inputFile);
+	std::println();
 	return 0;
 }
