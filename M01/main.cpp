@@ -2,7 +2,7 @@
 #include "../common/TxtFile.h"
 #include "../common/SplitIter.h"
 #include "../common/StopWatch.h"
-#include <print> //<- convenient, but bloats exe-binaries-size, back to printf??
+#include <print>
 
 #define NOMINMAX
 #include <Windows.h> //GetModuleFilename, needed to locate Data-Folder relative to executable
@@ -22,7 +22,8 @@ enum class DataAt : int {
 	Close,
 	SMA50,
 	SMA200,
-	Alarms
+	AlarmsUp,
+	AlarmsDown,
 };
 
 using Data = std::tuple<
@@ -30,32 +31,9 @@ using Data = std::tuple<
 	double,
 	double,
 	double,
-	std::bitset<2> //flag 0=GoldenCrossUp, 2=GoldenCrossDown
+	std::bitset<1>, //bullishflags
+	std::bitset<1> //bearishflags
 >;
-
-constexpr ymd makeDate(auto&& dateStr) {
-	using namespace std::chrono;
-	short y{};
-	unsigned int m{};
-	unsigned int d{};
-	for (int idx{}; auto item : dateStr | std::views::split('-')) {
-		++idx;
-		switch (idx) {
-		case(1):  
-			std::from_chars(item.data(), item.data() + item.size(), y); 
-			break;
-		case(2):
-			std::from_chars(item.data(), item.data() + item.size(), m); 
-			break;
-		case(3):
-			std::from_chars(item.data(), item.data() + item.size(), d); 
-			break;
-		default:
-			break;
-		}
-	}
-	return ymd{ year{y},month{m},day{d} };
-}
 
 constexpr double makeDouble(auto&& str) {
 	double d{};
@@ -63,35 +41,73 @@ constexpr double makeDouble(auto&& str) {
 	return d;
 }
 
+constexpr std::optional<ymd> makeDate(auto&& dateStr) //auto&& because of std::subrange<<>,<>..>, it is no string_view, but splittable on char
+{
+	using namespace std::chrono;
+	short y{};
+	unsigned int m{};
+	unsigned int d{};
+	for (int idx{}; auto item : dateStr | std::views::split('-'))
+	{
+		++idx;
+		switch (idx)
+		{
+		case(1):
+		{
+			auto [ptr, ec] = std::from_chars(item.data(), item.data() + item.size(), y);
+			if (ec != std::errc{}) {
+				return {};
+			}
+		}
+		break;
+		case(2):
+		{
+			auto [ptr, ec] = std::from_chars(item.data(), item.data() + item.size(), m);
+			if (ec != std::errc{}) {
+				return {};
+			}
+		}
+		break;
+		case(3):
+		{
+			auto [ptr, ec] = std::from_chars(item.data(), item.data() + item.size(), d);
+			if (ec != std::errc{}) {
+				return {};
+			}
+		}
+		break;
+		default:
+			break;
+		}
+	}
+	return ymd{ year{y},month{m},day{d} };
+}
+
+
 template<int stride, DataAt source, DataAt target>
 void sma(std::vector<Data>& data) {
 	if (stride <= 0) { return; }
 	if (data.size() < stride) { return; }
-
-	std::vector<double> sums;
-	sums.resize(data.size());
-	double firstsum{};
+	constexpr int sourceIdx = static_cast<int>(source);
+	constexpr int targetIdx = static_cast<int>(target);
+	
+	double lastsum{};
 	for (int pos = 0; pos < stride; ++pos) {
-		const double& val = std::get<static_cast<int>(source)>(data[pos]);
-		firstsum += val;
+		lastsum += std::get<sourceIdx>(data[pos]);
 	}
-	sums[stride - 1] = firstsum;
-	std::get<static_cast<int>(target)>(data[stride - 1]) = firstsum / stride;
+	std::get<targetIdx>(data[stride - 1]) = lastsum / stride;
 
 	for (int pos = stride; pos < data.size(); ++pos) {
-		const double& lastSum = sums[pos - 1];
-		const double& toRemove = std::get<static_cast<int>(source)>(data[pos - stride]);
-		const double& toAdd = std::get<static_cast<int>(source)>(data[pos]);
-		sums[pos] = lastSum - toRemove + toAdd;
-		Data& targetData = data[pos];
-		std::get<static_cast<int>(target)>(targetData) = sums[pos] / stride;
+		lastsum -= std::get<sourceIdx>(data[pos - stride]);;
+		lastsum += std::get<sourceIdx>(data[pos]);
+		std::get<targetIdx>(data[pos]) = lastsum / stride;
 	}
 }
 
 template<DataAt shouldCrossingUp, DataAt shouldBeCrossed, 
-	DataAt target=DataAt::Alarms, size_t flagPos=0ull
+	DataAt target=DataAt::AlarmsUp, size_t flagPos=0ull
 >
-void crossings( std::vector<Data>& data_){
+void mark_cross_up( std::vector<Data>& data_){
 	constexpr int i1 = static_cast<int>(shouldCrossingUp);
 	constexpr int i2 = static_cast<int>(shouldBeCrossed);
 	constexpr int targetIdx = static_cast<int>(target);
@@ -128,30 +144,31 @@ void run(const fs::path& inputFile)
 		Data pt{};
 		for (int idx{}; auto&& val : items) {
 			switch (idx) {
-			case(0): std::get<static_cast<int>(DataAt::Date)>(pt) = makeDate(val); break;
+			case(0): std::get<static_cast<int>(DataAt::Date)>(pt) = makeDate(val).value_or(ymd{}); break;
 			case(1): std::get<static_cast<int>(DataAt::Close)>(pt) = makeDouble(val); break;
 			}
 			++idx;
 		}
-		if (pt != Data{}) {
+		if (pt != Data{} && std::get<0>(pt) != ymd{} ) {
 			points.emplace_back(pt);
 		}
 	}
 
 	sma<50, DataAt::Close, DataAt::SMA50>(points);
 	sma<200, DataAt::Close, DataAt::SMA200>(points);
-
-	crossings<DataAt::SMA50, DataAt::SMA200, DataAt::Alarms, 0ull>(points);
-	crossings<DataAt::SMA200, DataAt::SMA50, DataAt::Alarms, 1ull>(points);
-
+	
+	mark_cross_up<DataAt::SMA50, DataAt::SMA200, DataAt::AlarmsUp, 0ull>(points);
+	mark_cross_up<DataAt::SMA200, DataAt::SMA50, DataAt::AlarmsDown, 0ull>(points);
+	
 	double crossAt{};
 	for (const Data& item : points) {
-		const auto& flags = std::get < static_cast<int>(DataAt::Alarms)>(item);
-		if (flags.test(0ull)) {
+		const auto& flagsUp = std::get < static_cast<int>(DataAt::AlarmsUp)>(item);
+		if (flagsUp.test(0ull)) {
 			std::println("50 crossing 200 up:   {} {:.2f}", std::get<0>(item), std::get<1>(item) );
 			crossAt = std::get<1>(item);
 		}
-		if (flags.test(1ull)) {
+		const auto& flagsDown = std::get < static_cast<int>(DataAt::AlarmsDown)>(item);
+		if (flagsDown.test(0ull)) {
 			std::println("50 crossing 200 down: {} {:.2f}", std::get<0>(item), std::get<1>(item) );
 		}
 	}
